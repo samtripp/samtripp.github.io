@@ -12,7 +12,7 @@
 
 	<body class="bg-[#f2eee4]">
 
-		<div class="flex items-center justify-center h-screen w-full flex-col gap-10">
+		<div class="flex items-center justify-center h-screen w-full flex-col gap-10 relative z-10">
 			<div class="w-64">
 				<img src="./assets/s_m.svg">
 			</div>
@@ -22,6 +22,8 @@
 		<div id="_canvas" class="absolute top-0 left-0"></div>
 
 	</body>
+
+	dig www.maraesam.com +nostats +nocomments +nocmd
 
 	<script>
 
@@ -33,7 +35,7 @@
 		let lastLay = null;
 
 		function preload() {
-		  for(var i=1; i<2; i++) {
+		  for(var i=1; i<9; i++) {
 		    imgs.push(loadImage('./assets/'+i+'.jpg'));
 		  }
 		}
