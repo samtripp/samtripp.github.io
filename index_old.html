@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>SAM e MARA</title>
+
+
+		<link rel="stylesheet" type="text/css" href="./dist/output.css">
+		<script src="https://cdn.jsdelivr.net/npm/p5@1.7.0/lib/p5.min.js"></script>
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+
+	</head>
+
+	<body class="bg-[#f2eee4]">
+
+		<div class="flex items-center justify-center h-screen w-full flex-col gap-10 relative z-10 mx-5">
+			<div class="w-64">
+				<img src="./assets/s_m.svg">
+			</div>
+			<!-- <div class="text-sm text-[#065e4d] underline"><a href="mailto:ciao@maraesam.com">ciao@maraesam.com</a></div> -->
+		</div>
+
+		<div id="_canvas" class="absolute top-0 left-0"></div>
+
+	</body>
+
+	<script>
+
+		const stickers = [];
+		const imgs = [];
+		let maxS = 5;
+		let moving = false;
+		let timer;
+		let lastLay = null;
+
+		function preload() {
+		  for(var i=1; i<9; i++) {
+		    imgs.push(loadImage('./assets/'+i+'.jpg'));
+		  }
+		}
+
+		class Sticker {
+		  constructor(x,y){
+		    this.x = x;
+		    this.y = y;
+		    this.s = 0;
+		    this.img = imgs[floor(random(0, imgs.length-1))];
+		    this.w = this.img.width;
+		    this.h = this.img.height;
+		    this.r = this.h/this.w;
+		    this.w = random(160, 200);
+		    this.h = this.r*this.w;
+		    this.angle = random(-2,2)
+		  }
+		  update() {
+		    push();
+		    translate(this.x,this.y);
+		    rotate(this.angle)
+		    scale(this.s);
+		    // ellipse(0,0,100,100);
+		    image(this.img, 0,0,this.w, this.h);
+		    this.s = min(this.s+0.15, 1);
+		    pop();
+		  }
+		}
+
+		function mouseMoved() {
+		  clearTimeout(timer);
+		  moving = true;
+		  timer = setTimeout(function() {
+		    moving = false;
+		  },500);
+		}
+
+		function setup() {
+		  let cnv = createCanvas(windowWidth, windowHeight);
+		  cnv.parent('_canvas');
+		  lastLay = new p5.Vector(0,0);
+		  imageMode(CENTER)
+		}
+
+		function draw() {
+		  clear();
+		  
+		  if(moving && 
+		     mouseX != pmouseX && 
+		     mouseY != pmouseY
+		    ) {
+		     if(dist(lastLay.x, lastLay.y, mouseX, mouseY) > random(100,200)) {
+		        lastLay.x = mouseX;
+		        lastLay.y = mouseY;
+		        stickers.push(new Sticker(mouseX, mouseY))
+		        if(stickers.length > maxS) {
+		          stickers.shift();
+		        }
+		    }
+		  }
+		  for(let sticker of stickers) {
+		      sticker.update();
+		  }
+		}
+
+	</script>
+
+</html>
