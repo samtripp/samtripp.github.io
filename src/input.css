@@ -1,3 +1,28 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+* {
+	box-sizing:border-box;
+}
+
+@font-face {
+	font-family:"Reck";
+	src:url("../assets/RecklessNeue-Light.ttf");
+	font-weight:normal;
+}
+
+@font-face {
+	font-family:"Reck";
+	src:url("../assets/RecklessNeue-Thin.ttf");
+	font-weight:300;
+}
+
+
+body, html {
+	-webkit-font-smoothing:antialiased;
+}
+
+h1,h2,h3 {
+	font-family:"Reck";
+}
