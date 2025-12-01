@@ -11,21 +11,35 @@ function encodeNumberTo2Bytes(number) {
   return [high, low];
 }
 
+function chrToHexTo4bit(character) {
+  const number = parseInt(character, 16);
+  return number.toString(2).padStart(4, '0');
+}
+
 function decode2BytesToNumber(one, two) {
   const bits = chrToHexTo4bit(one) + chrToHexTo4bit(two);
   return parseInt(bits, 2);
 }
 
-function calculateChecksum(data, header) {
-  let sum = HEADER;
-  for (const h of header) sum += h;
-  for (const d of data) sum += d;
-  sum += 1;
-  sum &= 0xff;
-  sum ^= 0xff;
-  sum += 1;
-  sum &= 0xff;
-  return sum;
+function calculateChecksum(data, header, head) {
+  let summed = 0;
+  const tmp = [head.charCodeAt(0), ...header.map(c => c.charCodeAt(0))];
+  summed += tmp.reduce((a, b) => a + b, 0);
+
+  const dataBytes = [];
+  for (const number of data) {
+    for (const val of encodeNumberTo2Bytes(number)) {
+      dataBytes.push(val.charCodeAt(0));
+    }
+  }
+
+  summed += dataBytes.reduce((a, b) => a + b, 0);
+  summed += 1;
+
+  summed &= 0xFF;
+  summed ^= 255;
+  summed += 1;
+  return summed;
 }
 
 function encode(matrixHashDash, address = 1) {
