@@ -33,7 +33,7 @@ function encode(matrixHashDash, address = 1) {
   const dataSize = (rows * cols) / 8;
   header.push(...encodeNumberTo2Bytes(dataSize));
 
-  const dataBytes = [];
+  const data = [];
 
   for (let col = 0; col < cols; col++) {
     const column = matrix.map(row => row[col]).join('').replace(/[- ]/g,'0').replace(/#/g,'1');
@@ -44,18 +44,20 @@ function encode(matrixHashDash, address = 1) {
       reversed.slice(0,4),
       reversed.slice(4,8)
     ];
-    // merge nibbles into full byte
-    for (let i = 0; i < nibbles.length; i += 2) {
-      const high = parseInt(nibbles[i],2);
-      const low  = parseInt(nibbles[i+1],2);
-      dataBytes.push((high << 4) | low);
+    for (const nib of nibbles) {
+      data.push(parseInt(nib,2));
     }
   }
 
-  const checksum = calculateChecksum(dataBytes, header);
+  const checksumData = [];
+  for (let i = 0; i < data.length; i += 2) {
+    checksumData.push((data[i] << 4) | data[i + 1]);
+  }
 
-  const finalBytes = [HEADER, ...header, ...dataBytes, FOOTER, checksum];
-  return new Uint8Array(finalBytes);
+  const footer = calculateChecksum(checksumData, header);
+  const final = [HEADER, ...header, ...data, FOOTER, footer];
+
+  return final; // Array of numbers 0-15 for nibbles
 }
 
 async function openPort(selectedPort) {
@@ -67,7 +69,12 @@ async function openPort(selectedPort) {
 
 async function writeIt(bytes) {
   if (!writer) throw new Error("Port not open");
-  await writer.write(bytes);
+  // Send each byte individually like Node.js
+  for (const b of bytes) {
+    await writer.write(new Uint8Array([b]));
+    // tiny delay (optional) for slow devices:
+    await new Promise(r => setTimeout(r, 0));
+  }
 }
 
 async function displayMain(matrix, address = 1) {
