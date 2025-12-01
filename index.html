@@ -38,31 +38,18 @@
     let selectedPort;
 
     document.getElementById("connect").addEventListener("click", async () => {
-      try {
         selectedPort = await navigator.serial.requestPort({ filters: [{ usbVendorId: 0x10c4 }] });
         await openPort(selectedPort);
         document.getElementById("status").textContent = "Status: Connected!";
-      } catch (err) {
-        console.error(err);
-        document.getElementById("status").textContent = "Error: " + err;
-      }
     });
 
     document.getElementById("send").addEventListener("click", async () => {
-      if (!selectedPort) {
-        alert("Please connect to a port first!");
-        return;
-      }
+        const flippy = place(erase(width, height), tiny(text), [0, 4], false, width, height);
+        await displayMain(flippy, address);
+    });
 
-      const text = document.getElementById("textInput").value;
-      const width = parseInt(document.getElementById("width").value, 10);
-      const height = parseInt(document.getElementById("height").value, 10);
-      const address = parseInt(document.getElementById("address").value, 10);
-
-      const flippy = place(erase(width, height), tiny(text), [0, 4], false, width, height);
-      console.log(flippy)
-      console.log(tiny(text))
-      await displayMain(flippy, address);
+    window.addEventListener("beforeunload", async () => {
+        await closePort();
     });
   </script>
 </body>

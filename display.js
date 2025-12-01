@@ -5,6 +5,8 @@ const FOOTER = '\x03';
 let port;
 let writer;
 
+/* ---------------- Helper functions ---------------- */
+
 function chrToHexTo4bit(character) {
   const number = parseInt(character, 16);
   return number.toString(2).padStart(4, '0');
@@ -44,7 +46,7 @@ function calculateChecksum(data, header, head) {
 }
 
 function encode(matrixHashDash, address = 1) {
-  const matrix = matrixHashDash.trim().split('\n');
+  const matrix = matrixHashDash.map(row => row.join('')).join('\n').trim().split('\n');
   const constant = 1;
   const rows = matrix.length;
   const columns = matrix[0].length;
@@ -80,35 +82,45 @@ function encode(matrixHashDash, address = 1) {
   return [HEADER, ...header, ...data, FOOTER, ...footer].join('');
 }
 
+/* ---------------- Web Serial functions ---------------- */
 
 /**
- * Open Web Serial port
+ * Open a Web Serial port.
+ * Must be called from a user gesture (button click).
+ * @param {SerialPort} selectedPort - Port returned by requestPort()
+ * @param {number} baudRate - Baud rate (default 4800)
  */
-async function openPort(selectedPort) {
-  if (!selectedPort) throw new Error("No port selected");
+export async function openPort(selectedPort, baudRate = 4800) {
   port = selectedPort;
-  await port.open({ baudRate: 4800 });
+  await port.open({ baudRate });
   writer = port.writable.getWriter();
 }
 
-async function writeIt(encoded) {
-  if (!writer) throw new Error('Port not open');
+/**
+ * Write an encoded matrix to the connected port.
+ * @param {string[][]} matrix - 2D array of 0/1 values
+ * @param {number} address - Device address
+ */
+export async function displayMain(matrix, address = 1) {
+  if (!port || !writer) {
+    throw new Error("Port not open! Call openPort() first.");
+  }
 
-  const data = new Uint8Array(
-    Array.from(encoded).map(c => c.charCodeAt(0))
-  );
+  const encoded = encode(matrix, address);
+  const data = new Uint8Array(Array.from(encoded).map(c => c.charCodeAt(0)));
   await writer.write(data);
 }
 
 /**
- * Display matrix on FlipDot
- * matrix: array of arrays of 0/1
+ * Close the port and release writer lock.
  */
-async function displayMain(matrix, address = 1) {
-  if (!writer) throw new Error("Port not open");
-  const matrixStr = matrix.map(row => row.map(cell => (cell ? '#' : '-')).join('')).join('\n');
-  const encodedString = encode(matrixStr, address);
-  await writeIt(encodedString);
+export async function closePort() {
+  if (writer) {
+    await writer.releaseLock();
+    writer = null;
+  }
+  if (port) {
+    await port.close();
+    port = null;
+  }
 }
-
-export { displayMain, openPort, writeIt, encode };
