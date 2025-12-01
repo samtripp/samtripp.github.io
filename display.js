@@ -11,6 +11,11 @@ function encodeNumberTo2Bytes(number) {
   return [high, low];
 }
 
+function decode2BytesToNumber(one, two) {
+  const bits = chrToHexTo4bit(one) + chrToHexTo4bit(two);
+  return parseInt(bits, 2);
+}
+
 function calculateChecksum(data, header) {
   let sum = HEADER;
   for (const h of header) sum += h;
