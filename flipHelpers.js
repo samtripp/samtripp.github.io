@@ -30,7 +30,26 @@ export function convert(matrix) {
   return matrix.map(row => row.join('').replace(/0/g, '-').replace(/1/g, '#')).join('\n');
 }
 
-export const tiny = {
+function glify(text, font) {
+  const chars = text.toUpperCase().trim().split('');
+  let output = [];
+
+  for (const c of chars) {
+    const glyph = font[c] || font[' '];
+    const spaceCols = c === ' ' ? 2 : 1;
+
+    if (output.length === 0) {
+      output = glyph.map(row => [...row, ...Array(spaceCols).fill(0)]);
+    } else {
+      output = output.map((row, i) => [...row, ...glyph[i], ...Array(spaceCols).fill(0)]);
+    }
+  }
+  return output;
+}
+
+export const tiny = text => glify(text, small);
+
+export const small = {
   " ": [[0], [0], [0], [0], [0]],
 
   "A": [[0, 1, 1, 0],
