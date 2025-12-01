@@ -16,7 +16,6 @@
             background: rgba(0,0,0,0.7);
             color: white;
             font-size: 1.2em;
-            display: flex;
             align-items: center;
             justify-content: center;
             text-align: center;
@@ -70,14 +69,17 @@
             import { erase, place, tiny } from './flipHelpers.js';
             import { displayMain, openPort } from './display.js';
 
-            function checkWebSerialSupport() {
-                if (!("serial" in navigator)) {
+            function checkChrome() {
+                const isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
+                if (!isChrome) {
                     const warning = document.getElementById("chromeWarning");
                     warning.style.display = "flex";
+                    console.log('not chrome')
                 }
             }
 
-            window.addEventListener("DOMContentLoaded", checkWebSerialSupport);
+            // Run on page load
+            window.addEventListener("DOMContentLoaded", checkChrome);
 
             let selectedPort;
 
