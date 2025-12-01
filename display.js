@@ -2,6 +2,9 @@
 const HEADER = '\x02';
 const FOOTER = '\x03';
 
+let port;
+let writer;
+
 function chrToHexTo4bit(character) {
   const number = parseInt(character, 16);
   return number.toString(2).padStart(4, '0');
