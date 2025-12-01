@@ -40,26 +40,38 @@
     let port;
     let writer;
 
-    /** List previously granted ports */
+    let availablePorts = [];
+
     async function listPorts() {
         const ports = await navigator.serial.getPorts();
+        availablePorts = ports; // store globally
         const portSelect = document.getElementById("portSelect");
         portSelect.innerHTML = "";
 
-        ports.forEach((p, i) => {
-            const option = document.createElement("option");
+        ports.forEach((p, idx) => {
             const info = p.getInfo();
-            option.value = i;
+            const option = document.createElement("option");
+            option.value = idx; // store index
             option.textContent = info.usbVendorId
-                ? `Vendor:${info.usbVendorId} Product:${info.usbProductId || ""}`
+                ? `SLAB / Vendor:${info.usbVendorId}`
                 : "Unknown port";
             portSelect.appendChild(option);
         });
-
-        if (ports.length > 0) {
-            port = ports[0]; // default selection
-        }
     }
+
+    // When user selects a port
+    document.getElementById("portSelect").addEventListener("change", async (e) => {
+        const idx = parseInt(e.target.value, 10);
+        const selectedPort = availablePorts[idx];
+        if (selectedPort) {
+            port = selectedPort;
+            await openPort(port);
+            document.getElementById("status").textContent = "Status: Connected!";
+        } else {
+            document.getElementById("status").textContent = "No port selected!";
+        }
+    });
+
 
     /** Request a new port from the user */
     async function requestNewPort() {
@@ -75,13 +87,6 @@
         }
     }
     
-
-    /** Handle selection from dropdown */
-    document.getElementById("portSelect").addEventListener("change", async (e) => {
-        const ports = await navigator.serial.getPorts();
-        port = ports[e.target.value];
-        if (port) await openPort(port);
-    });
 
     /** Connect button triggers requestPort */
     document.getElementById("connect").addEventListener("click", requestNewPort);
