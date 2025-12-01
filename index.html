@@ -11,7 +11,7 @@
   <div class="control">
     <label>USB Port:</label>
     <select id="portSelect"></select>
-    <button id="connect">Connect</button>
+    <button id="requestPortBtn">Request New Port</button>
   </div>
 
   <div class="control">
@@ -28,89 +28,83 @@
 
   <div class="control">
     <input type="text" id="textInput" placeholder="Type message" />
-    <button id="send">Send</button>
+    <button id="sendBtn">Send</button>
   </div>
 
   <pre id="status">Status: Not connected</pre>
 
   <script type="module">
-    import { erase, place, convert, tiny } from './flipHelpers.js';
+    import { erase, place, tiny } from './flipHelpers.js';
     import { displayMain, openPort } from './display.js';
 
     let port;
     let writer;
-
     let availablePorts = [];
 
-    async function listPorts() {
-        const ports = await navigator.serial.getPorts();
-        availablePorts = ports; // store globally
-        const portSelect = document.getElementById("portSelect");
-        portSelect.innerHTML = "";
+    const statusEl = document.getElementById("status");
+    const portSelectEl = document.getElementById("portSelect");
 
-        ports.forEach((p, idx) => {
-            const info = p.getInfo();
-            const option = document.createElement("option");
-            option.value = idx; // store index
-            option.textContent = info.usbVendorId
-                ? `SLAB / Vendor:${info.usbVendorId}`
-                : "Unknown port";
-            portSelect.appendChild(option);
-        });
+    /** List all previously granted ports */
+    async function listPorts() {
+      availablePorts = await navigator.serial.getPorts();
+      portSelectEl.innerHTML = "";
+      availablePorts.forEach((p, idx) => {
+        const info = p.getInfo();
+        const option = document.createElement("option");
+        option.value = idx;
+        option.textContent = info.usbVendorId
+          ? `SLAB / Vendor: ${info.usbVendorId}`
+          : "Unknown port";
+        portSelectEl.appendChild(option);
+      });
     }
 
-    // When user selects a port
-    document.getElementById("portSelect").addEventListener("change", async (e) => {
-        const idx = parseInt(e.target.value, 10);
-        const selectedPort = availablePorts[idx];
-        if (selectedPort) {
-            port = selectedPort;
-            await openPort(port);
-            document.getElementById("status").textContent = "Status: Connected!";
-        } else {
-            document.getElementById("status").textContent = "No port selected!";
-        }
-    });
-
+    /** Open selected port */
+    async function selectPort(idx) {
+      const selectedPort = availablePorts[idx];
+      if (!selectedPort) return;
+      await openPort(selectedPort);
+      statusEl.textContent = "Status: Connected to selected port!";
+    }
 
     /** Request a new port from the user */
     async function requestNewPort() {
-        try {
-            port = await navigator.serial.requestPort({
-                filters: [{ usbVendorId: 0x10c4 }] // optional filter
-            });
-            await openPort();
-            await listPorts(); // refresh list
-        } catch (err) {
-            console.error(err);
-            document.getElementById("status").textContent = "Error: " + err;
-        }
+      try {
+        port = await navigator.serial.requestPort({
+          filters: [{ usbVendorId: 0x10c4 }] // optional
+        });
+        await openPort(port);
+        await listPorts(); // refresh dropdown
+        statusEl.textContent = "Status: Connected to new port!";
+      } catch (err) {
+        console.error(err);
+        statusEl.textContent = "Error: " + err;
+      }
     }
-    
 
-    /** Connect button triggers requestPort */
-    document.getElementById("connect").addEventListener("click", requestNewPort);
+    /** Send text to the display */
+    async function sendText() {
+      const text = document.getElementById("textInput").value;
+      const width = parseInt(document.getElementById("width").value, 10);
+      const height = parseInt(document.getElementById("height").value, 10);
+      const address = parseInt(document.getElementById("address").value, 10);
 
-    /** Display text on the FlipDot */
-    document.getElementById("send").addEventListener("click", async () => {
-        const text = document.getElementById("textInput").value;
-        const width = parseInt(document.getElementById("width").value, 10);
-        const height = parseInt(document.getElementById("height").value, 10);
-        const address = parseInt(document.getElementById("address").value, 10);
+      if (!port || !writer) {
+        alert("Please connect to a port first!");
+        return;
+      }
 
-        if (!port || !writer) {
-            alert("Please connect to a port first!");
-            return;
-        }
+      let flippy = erase(width, height);
+      const matrix = tiny(text);
+      flippy = place(flippy, matrix, [0, 4], false, width, height);
+      await displayMain(flippy, address);
+    }
 
-        let flippy = erase(width, height);
-        const matrix = tiny(text);
-        flippy = place(flippy, matrix, [0, 4], false, width, height);
-        await displayMain(flippy, address);
-    });
-
+    // Event listeners
     window.addEventListener("load", listPorts);
-</script>
-
+    portSelectEl.addEventListener("change", e => selectPort(parseInt(e.target.value, 10)));
+    document.getElementById("requestPortBtn").addEventListener("click", requestNewPort);
+    document.getElementById("sendBtn").addEventListener("click", sendText);
+  </script>
 </body>
 </html>
