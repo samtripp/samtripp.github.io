@@ -1,64 +1,85 @@
-const HEADER = '\x02';
-const FOOTER = '\x03';
+const HEADER = 0x02;
+const FOOTER = 0x03;
 
 let port;
 let writer;
 
+/**
+ * Converts 1 hex character to 4-bit number
+ */
 function chrToHexTo4bit(character) {
-  const number = parseInt(character, 16);
-  return number.toString(2).padStart(4, '0');
+  return parseInt(character, 16);
 }
 
+/**
+ * Decode two hex characters to 1 byte
+ */
 function decode2BytesToNumber(one, two) {
-  return parseInt(chrToHexTo4bit(one) + chrToHexTo4bit(two), 2);
+  return (chrToHexTo4bit(one) << 4) | chrToHexTo4bit(two);
 }
 
+/**
+ * Encode number to 2 hex characters
+ */
 function encodeNumberTo2Bytes(number) {
-  const binary = number.toString(2).padStart(8, '0');
-  return [
-    parseInt(binary.slice(0, 4), 2).toString(16).toUpperCase(),
-    parseInt(binary.slice(4), 2).toString(16).toUpperCase()
-  ];
+  const high = (number >> 4) & 0x0f;
+  const low = number & 0x0f;
+  return [high, low];
 }
 
-function calculateChecksum(data, header, head) {
-  let summed = [head.charCodeAt(0), ...header.map(c => c.charCodeAt(0))].reduce((a,b)=>a+b,0);
-  const dataBytes = [];
-  for (const number of data) {
-    for (const val of encodeNumberTo2Bytes(number)) dataBytes.push(val.charCodeAt(0));
-  }
-  summed += dataBytes.reduce((a,b)=>a+b,0) + 1;
-  summed &= 0xFF;
-  summed ^= 255;
-  summed += 1;
-  return summed;
+/**
+ * Calculate checksum
+ */
+function calculateChecksum(data, header) {
+  let sum = HEADER;
+  for (const h of header) sum += h;
+  for (const d of data) sum += d;
+  sum += 1;
+  sum &= 0xff;
+  sum ^= 0xff;
+  sum += 1;
+  sum &= 0xff;
+  return sum;
 }
 
+/**
+ * Encode matrix (array of strings with '#' and '-') into Uint8Array
+ */
 function encode(matrixHashDash, address = 1) {
   const matrix = matrixHashDash.trim().split('\n');
-  const constant = 1;
   const rows = matrix.length;
   const columns = matrix[0].length;
 
+  const constant = 1;
   const header = [constant, address];
   const dataSize = (rows * columns) / 8;
-  const [dsHigh, dsLow] = encodeNumberTo2Bytes(dataSize).map(h => parseInt(h, 16));
-  header.push(dsHigh, dsLow);
+  header.push(...encodeNumberTo2Bytes(dataSize));
 
-  const data = [];
+  const dataBytes = [];
+
   for (let col = 0; col < columns; col++) {
-    const column = matrix.map(row => row[col]).join('').replace(/[- ]/g,'0').replace(/#/g,'1');
+    const column = matrix.map(row => row[col]).join('').replace(/[- ]/g, '0').replace(/#/g, '1');
     const reversed = column.split('').reverse().join('');
-    const nibbles = [reversed.slice(8,12), reversed.slice(12,16), reversed.slice(0,4), reversed.slice(4,8)];
-    for (const nib of nibbles) data.push(parseInt(nib,2));
+    const nibbles = [
+      reversed.slice(8, 12),
+      reversed.slice(12, 16),
+      reversed.slice(0, 4),
+      reversed.slice(4, 8),
+    ];
+    for (const nib of nibbles) {
+      dataBytes.push(parseInt(nib, 2));
+    }
   }
 
   const checksumData = [];
-  for (let i=0; i<data.length; i+=2) checksumData.push(decode2BytesToNumber(data[i].toString(16).toUpperCase(), data[i+1]?.toString(16).toUpperCase() || '0'));
-  let footer = calculateChecksum(checksumData, header.map(h => String.fromCharCode(h)), HEADER);
-  const [fHigh, fLow] = encodeNumberTo2Bytes(footer).map(h => parseInt(h, 16));
+  for (let i = 0; i < dataBytes.length; i += 2) {
+    checksumData.push((dataBytes[i] << 4) | dataBytes[i + 1]);
+  }
 
-  return new Uint8Array([HEADER.charCodeAt(0), ...header, ...data, FOOTER.charCodeAt(0), fHigh, fLow]);
+  const footer = calculateChecksum(checksumData, header);
+  const finalBytes = [HEADER, ...header, ...checksumData, FOOTER, footer];
+
+  return new Uint8Array(finalBytes);
 }
 
 
