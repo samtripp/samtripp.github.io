@@ -70,16 +70,14 @@
             import { erase, place, tiny } from './flipHelpers.js';
             import { displayMain, openPort } from './display.js';
 
-            function checkChrome() {
-                const isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
-                if (!isChrome) {
+            function checkWebSerialSupport() {
+                if (!("serial" in navigator)) {
                     const warning = document.getElementById("chromeWarning");
                     warning.style.display = "flex";
                 }
             }
 
-            // Run on page load
-            window.addEventListener("DOMContentLoaded", checkChrome);
+            window.addEventListener("DOMContentLoaded", checkWebSerialSupport);
 
             let selectedPort;
 
