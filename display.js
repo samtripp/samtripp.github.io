@@ -55,9 +55,9 @@ function encode(matrixHashDash, address = 1) {
   }
 
   const footer = calculateChecksum(checksumData, header);
-  const final = [HEADER, ...header, ...data, FOOTER, footer];
-
-  return final; // Array of numbers 0-15 for nibbles
+//   const final = [HEADER, ...header, ...data, FOOTER, footer];
+  return HEADER + header.join('') + data.join('') + FOOTER + footer.join('');
+//   return final; // Array of numbers 0-15 for nibbles
 }
 
 async function openPort(selectedPort) {
@@ -67,12 +67,11 @@ async function openPort(selectedPort) {
   writer = port.writable.getWriter();
 }
 
-async function writeIt(bytes) {
+async function writeIt(encodedString) {
   if (!writer) throw new Error("Port not open");
-  // Send each byte individually like Node.js
-  for (const b of bytes) {
-    await writer.write(new Uint8Array([b]));
-    // tiny delay (optional) for slow devices:
+  for (const char of encodedString) {
+    await writer.write(new TextEncoder().encode(char));
+    // tiny delay to mimic Node.js serial timing
     await new Promise(r => setTimeout(r, 0));
   }
 }
