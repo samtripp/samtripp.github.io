@@ -78,7 +78,7 @@
         flippy = erase(width, height);
         const matrix = tiny(text);
         flippy = place(flippy, matrix, [0, 4], false, width, height);
-        displayMain(convert(flippy), port, address);
+        displayMain(flippy, port, address);
     }
 
     window.addEventListener("load", listPorts);
