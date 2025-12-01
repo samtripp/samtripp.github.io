@@ -1,4 +1,3 @@
-// display.js
 const HEADER = '\x02';
 const FOOTER = '\x03';
 
@@ -6,79 +5,64 @@ let port;
 let writer;
 
 function chrToHexTo4bit(character) {
-  const number = parseInt(character, 16);
-  return number.toString(2).padStart(4, '0');
+  return parseInt(character, 16);
 }
 
 function decode2BytesToNumber(one, two) {
-  const bits = chrToHexTo4bit(one) + chrToHexTo4bit(two);
-  return parseInt(bits, 2);
+  return (chrToHexTo4bit(one) << 4) | chrToHexTo4bit(two);
 }
 
 function encodeNumberTo2Bytes(number) {
-  const binary = number.toString(2).padStart(8, '0');
-  const one = parseInt(binary.slice(0, 4), 2).toString(16).toUpperCase();
-  const two = parseInt(binary.slice(4), 2).toString(16).toUpperCase();
-  return [one, two];
+  const high = (number >> 4) & 0x0F;
+  const low = number & 0x0F;
+  // Return ASCII characters '0'-'F'
+  return [high.toString(16).toUpperCase(), low.toString(16).toUpperCase()];
 }
 
-function calculateChecksum(data, header, head) {
-  let summed = 0;
-  const tmp = [head.charCodeAt(0), ...header.map(c => c.charCodeAt(0))];
-  summed += tmp.reduce((a, b) => a + b, 0);
-
-  const dataBytes = [];
-  for (const number of data) {
-    for (const val of encodeNumberTo2Bytes(number)) {
-      dataBytes.push(val.charCodeAt(0));
-    }
-  }
-
-  summed += dataBytes.reduce((a, b) => a + b, 0);
-  summed += 1;
-
-  summed &= 0xFF;
-  summed ^= 255;
-  summed += 1;
-  return summed;
+function calculateChecksum(data, header) {
+  let sum = HEADER.charCodeAt(0);
+  for (const h of header) sum += h.charCodeAt(0);
+  for (const d of data) sum += d.charCodeAt(0);
+  sum += 1;
+  sum &= 0xFF;
+  sum ^= 0xFF;
+  sum += 1;
+  sum &= 0xFF;
+  return sum;
 }
 
 function encode(matrixHashDash, address = 1) {
   const matrix = matrixHashDash.trim().split('\n');
-  const constant = 1;
   const rows = matrix.length;
   const columns = matrix[0].length;
 
+  const constant = 1;
   const header = [String(constant), String(address)];
-  const dataSize = (rows * columns) / 8;
-  for (const c of encodeNumberTo2Bytes(dataSize)) header.push(c);
 
   const data = [];
   for (let col = 0; col < columns; col++) {
-    const column = matrix.map(row => row[col]).join('').replace(/[- ]/g, '0').replace(/#/g, '1');
+    const column = matrix.map(row => row[col]).join('').replace(/[- ]/g,'0').replace(/#/g,'1');
     const reversed = column.split('').reverse().join('');
     const nibbles = [
-      reversed.slice(8, 12),
-      reversed.slice(12, 16),
-      reversed.slice(0, 4),
-      reversed.slice(4, 8),
+      reversed.slice(8,12),
+      reversed.slice(12,16),
+      reversed.slice(0,4),
+      reversed.slice(4,8)
     ];
     for (const nib of nibbles) {
-      const num = parseInt(nib, 2);
-      data.push(num.toString(16).toUpperCase());
+      data.push(parseInt(nib,2).toString(16).toUpperCase());
     }
   }
 
-  const checksumData = [];
-  for (let i = 0; i < data.length; i += 2) {
-    checksumData.push(decode2BytesToNumber(data[i], data[i + 1]));
-  }
+  // checksum
+  const checksum = calculateChecksum(data, header);
+  const footerBytes = encodeNumberTo2Bytes(checksum);
 
-  let footer = calculateChecksum(checksumData, header, HEADER);
-  footer = encodeNumberTo2Bytes(footer);
-  return HEADER + header.join('') + data.join('') + FOOTER + footer.join('');
+  // build final string
+  return HEADER + header.join('') + data.join('') + FOOTER + footerBytes.join('');
 }
 
+// Open port
 async function openPort(selectedPort) {
   if (!selectedPort) throw new Error("No port selected");
   port = selectedPort;
@@ -86,20 +70,19 @@ async function openPort(selectedPort) {
   writer = port.writable.getWriter();
 }
 
-async function writeIt(encodedString) {
+// Write string to port (converted to Uint8Array)
+async function writeIt(str) {
   if (!writer) throw new Error("Port not open");
-  for (const char of encodedString) {
-    await writer.write(new TextEncoder().encode(char));
-    // tiny delay to mimic Node.js serial timing
-    await new Promise(r => setTimeout(r, 0));
-  }
+  const encoded = new TextEncoder().encode(str); // ASCII bytes
+  await writer.write(encoded);
 }
 
+// Display matrix
 async function displayMain(matrix, address = 1) {
-  if (!port || !writer) throw new Error("Port not open");
-  const matrixStr = matrix.map(row => row.map(v => v ? '#' : '-').join('')).join('\n');
-  const encoded = encode(matrixStr, address);
-  await writeIt(encoded);
+  if (!writer) throw new Error("Port not open");
+  const matrixStr = matrix.map(row => row.join('').replace(/0/g,'-').replace(/1/g,'#')).join('\n');
+  const encodedString = encode(matrixStr, address);
+  await writeIt(encodedString);
 }
 
 export { displayMain, openPort, writeIt, encode };
