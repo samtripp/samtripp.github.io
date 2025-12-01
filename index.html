@@ -35,14 +35,12 @@
     import { erase, place, tiny } from './flipHelpers.js';
     import { displayMain, openPort } from './display.js';
 
-    let port;
-    let writer;
+    let selectedPort;
 
-    /** Connect button triggers port selection */
     document.getElementById("connect").addEventListener("click", async () => {
       try {
-        port = await navigator.serial.requestPort({ filters: [{ usbVendorId: 0x10c4 }] });
-        await openPort(port);
+        selectedPort = await navigator.serial.requestPort({ filters: [{ usbVendorId: 0x10c4 }] });
+        await openPort(selectedPort);
         document.getElementById("status").textContent = "Status: Connected!";
       } catch (err) {
         console.error(err);
@@ -50,9 +48,8 @@
       }
     });
 
-    /** Send button displays text */
     document.getElementById("send").addEventListener("click", async () => {
-      if (!port) {
+      if (!selectedPort) {
         alert("Please connect to a port first!");
         return;
       }
@@ -62,9 +59,8 @@
       const height = parseInt(document.getElementById("height").value, 10);
       const address = parseInt(document.getElementById("address").value, 10);
 
-      let flippy = erase(width, height);
-      const matrix = tiny(text);
-      flippy = place(flippy, matrix, [0, 4], false, width, height);
+      const flippy = place(erase(width, height), tiny(text), [0, 4], false, width, height);
+
       await displayMain(flippy, address);
     });
   </script>
