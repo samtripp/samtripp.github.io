@@ -72,6 +72,7 @@ async function openPort(selectedPort) {
 async function writeIt(encoded) {
   if (!writer) throw new Error("Port not open");
   const encoder = new TextEncoder();
+  console.log(encoder.encode(encoded))
   await writer.write(encoder.encode(encoded));
 }
 
