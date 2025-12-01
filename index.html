@@ -1,74 +1,84 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Flippy V1 Web Controller</title>
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
-  <h1>FlipDot Controller</h1>
+    <head>
+    <meta charset="UTF-8">
+    <title>Flippy V1 Web Controller</title>
+    <link rel="stylesheet" href="style.css">
+    </head>
+    <body>
+        
+        <header>
 
-  <div class="control">
-    <button id="connect">Connect to Port</button>
-  </div>
+            <h1>Flippy</h1>
+            
+        </header>
+        <main>
 
-  <div class="control">
-    <label>Address:</label>
-    <input type="number" id="address" value="1" min="1" />
-  </div>
+            <div class="control">
+                <button id="connect">Connect to Port</button>
+                <pre id="status">Status: Not connected</pre>
+            </div>
 
-  <div class="control">
-    <label>Width:</label>
-    <input type="number" id="width" value="96" min="1" />
-    <label>Height:</label>
-    <input type="number" id="height" value="16" min="1" />
-  </div>
+            <div class="control">
+                <label>Address:</label>
+                <input type="number" id="address" value="1" min="1" />
+            </div>
 
-  <div class="control">
-    <input type="text" id="textInput" placeholder="Type message" />
-    <button id="send">Send</button>
-  </div>
+            <div class="control">
+                <label>Width:</label>
+                <input type="number" id="width" value="96" min="1" />
+            </div>
 
-  <pre id="status">Status: Not connected</pre>
+            <div class="control">
+                <label>Height:</label>
+                <input type="number" id="height" value="16" min="1" />
+            </div>
 
-  <script type="module">
-    import { erase, place, tiny } from './flipHelpers.js';
-    import { displayMain, openPort } from './display.js';
+            <div class="message">
+                <input type="text" id="textInput" placeholder="Type message" />
+                <button id="send">Send <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-big-right-icon lucide-arrow-big-right"><path d="M11 9a1 1 0 0 0 1-1V5.061a1 1 0 0 1 1.811-.75l6.836 6.836a1.207 1.207 0 0 1 0 1.707l-6.836 6.835a1 1 0 0 1-1.811-.75V16a1 1 0 0 0-1-1H5a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1z"/></svg></button>
+            </div>
 
-    let selectedPort;
+        </main>
 
-    document.getElementById("connect").addEventListener("click", async () => {
-      try {
-        selectedPort = await navigator.serial.requestPort({ filters: [{ usbVendorId: 0x10c4 }] });
-        await openPort(selectedPort);
-        document.getElementById("status").textContent = "Status: Connected!";
-      } catch (err) {
-        console.error(err);
-        document.getElementById("status").textContent = "Error: " + err;
-      }
-    });
+        <script type="module">
+            import { erase, place, tiny } from './flipHelpers.js';
+            import { displayMain, openPort } from './display.js';
 
-    document.getElementById("send").addEventListener("click", async () => {
-      if (!selectedPort) {
-        alert("Please connect to a port first!");
-        return;
-      }
+            let selectedPort;
 
-      const text = document.getElementById("textInput").value;
-      const width = parseInt(document.getElementById("width").value, 10);
-      const height = parseInt(document.getElementById("height").value, 10);
-      const address = parseInt(document.getElementById("address").value, 10);
+            document.getElementById("connect").addEventListener("click", async () => {
+                try {
+                    selectedPort = await navigator.serial.requestPort({ filters: [{ usbVendorId: 0x10c4 }] });
+                    await openPort(selectedPort);
+                    document.getElementById("status").textContent = "Status: Connected!";
+                } catch (err) {
+                    console.error(err);
+                    document.getElementById("status").textContent = "Error: " + err;
+                }
+                });
 
-      const flippy = place(erase(width, height), tiny(text), [0, 4], false, width, height);
-      console.log(flippy)
-      console.log(tiny(text))
-      await displayMain(flippy, address);
-    });
+                document.getElementById("send").addEventListener("click", async () => {
+                if (!selectedPort) {
+                    alert("Please connect to a port first!");
+                    return;
+                }
 
-    window.addEventListener("beforeunload", async () => {
-        await closePort();
-    });
+                const text = document.getElementById("textInput").value;
+                const width = parseInt(document.getElementById("width").value, 10);
+                const height = parseInt(document.getElementById("height").value, 10);
+                const address = parseInt(document.getElementById("address").value, 10);
 
-  </script>
-</body>
+                const flippy = place(erase(width, height), tiny(text), [0, 6], false, width, height);
+                console.log(flippy)
+                console.log(tiny(text))
+                await displayMain(flippy, address);
+            });
+
+            window.addEventListener("beforeunload", async () => {
+                await closePort();
+            });
+
+        </script>
+    </body>
 </html>
