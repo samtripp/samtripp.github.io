@@ -60,7 +60,8 @@
       const address = parseInt(document.getElementById("address").value, 10);
 
       const flippy = place(erase(width, height), tiny(text), [0, 4], false, width, height);
-
+      console.log(flippy)
+      console.log(tiny(text))
       await displayMain(flippy, address);
     });
   </script>
