@@ -1,15 +1,6 @@
 // display.js
-const HEADER = 0x02;
-const FOOTER = 0x03;
-
-let port;
-let writer;
-
-function encodeNumberTo2Bytes(number) {
-  const high = (number >> 4) & 0x0f;
-  const low = number & 0x0f;
-  return [high, low];
-}
+const HEADER = '\x02';
+const FOOTER = '\x03';
 
 function chrToHexTo4bit(character) {
   const number = parseInt(character, 16);
@@ -19,6 +10,13 @@ function chrToHexTo4bit(character) {
 function decode2BytesToNumber(one, two) {
   const bits = chrToHexTo4bit(one) + chrToHexTo4bit(two);
   return parseInt(bits, 2);
+}
+
+function encodeNumberTo2Bytes(number) {
+  const binary = number.toString(2).padStart(8, '0');
+  const one = parseInt(binary.slice(0, 4), 2).toString(16).toUpperCase();
+  const two = parseInt(binary.slice(4), 2).toString(16).toUpperCase();
+  return [one, two];
 }
 
 function calculateChecksum(data, header, head) {
