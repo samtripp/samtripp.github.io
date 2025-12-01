@@ -6,39 +6,43 @@
         <link rel="stylesheet" href="style.css">
     </head>
     <body>
+
+        <div class="wrapper">
         
-        <header>
+            <header>
 
-            <h1>Flippy</h1>
+                <h1>Flippy</h1>
 
-            <div class="control">
-                <button id="connect">Connect to Port</button>
-                <pre id="status">Status: Not connected</pre>
+                <div class="control">
+                    <button id="connect">Connect to Port</button>
+                    <pre id="status">Status: Not connected</pre>
+                </div>
+                
+            </header>
+            <main>
+
+                <div class="control">
+                    <label>Address:</label>
+                    <input type="number" id="address" value="1" min="1" />
+                </div>
+
+                <div class="control">
+                    <label>Width:</label>
+                    <input type="number" id="width" value="96" min="1" />
+                </div>
+
+                <div class="control">
+                    <label>Height:</label>
+                    <input type="number" id="height" value="16" min="1" />
+                </div>
+
+            </main>
+
+            <div class="message">
+                    <input type="text" id="textInput" placeholder="Type message" />
+                    <button id="send">Send <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-big-right-icon lucide-arrow-big-right"><path d="M11 9a1 1 0 0 0 1-1V5.061a1 1 0 0 1 1.811-.75l6.836 6.836a1.207 1.207 0 0 1 0 1.707l-6.836 6.835a1 1 0 0 1-1.811-.75V16a1 1 0 0 0-1-1H5a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1z"/></svg></button>
             </div>
-            
-        </header>
-        <main>
 
-            <div class="control">
-                <label>Address:</label>
-                <input type="number" id="address" value="1" min="1" />
-            </div>
-
-            <div class="control">
-                <label>Width:</label>
-                <input type="number" id="width" value="96" min="1" />
-            </div>
-
-            <div class="control">
-                <label>Height:</label>
-                <input type="number" id="height" value="16" min="1" />
-            </div>
-
-        </main>
-
-        <div class="message">
-                <input type="text" id="textInput" placeholder="Type message" />
-                <button id="send">Send <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-big-right-icon lucide-arrow-big-right"><path d="M11 9a1 1 0 0 0 1-1V5.061a1 1 0 0 1 1.811-.75l6.836 6.836a1.207 1.207 0 0 1 0 1.707l-6.836 6.835a1 1 0 0 1-1.811-.75V16a1 1 0 0 0-1-1H5a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1z"/></svg></button>
         </div>
 
         <script type="module">
