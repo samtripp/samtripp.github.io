@@ -35,58 +35,84 @@
 
   <script type="module">
     import { erase, place, convert, tiny } from './flipHelpers.js';
-    import { displayMain } from './display.js';
+    import { displayMain } from './display_webserial.js';
 
+    let port;
+    let writer;
+
+    /** List previously granted ports */
     async function listPorts() {
         const ports = await navigator.serial.getPorts();
         const portSelect = document.getElementById("portSelect");
         portSelect.innerHTML = "";
-        ports.forEach(p => {
+
+        ports.forEach((p, i) => {
             const option = document.createElement("option");
-            option.value = ports.indexOf(p);
-            option.textContent = p.getInfo().usbVendorId
-            ? `SLAB / Vendor:${p.getInfo().usbVendorId}`
-            : "Unknown port";
+            const info = p.getInfo();
+            option.value = i;
+            option.textContent = info.usbVendorId
+                ? `Vendor:${info.usbVendorId} Product:${info.usbProductId || ""}`
+                : "Unknown port";
             portSelect.appendChild(option);
         });
+
+        if (ports.length > 0) {
+            port = ports[0]; // default selection
+        }
     }
 
-    async function connect() {
+    /** Request a new port from the user */
+    async function requestNewPort() {
         try {
             port = await navigator.serial.requestPort({
-                filters: [{ usbVendorId: 0x10c4 }]
+                filters: [{ usbVendorId: 0x10c4 }] // optional filter
             });
-
-            await port.open({ baudRate: 4800 });
-            const encoder = new TextEncoderStream();
-            encoder.readable.pipeTo(port.writable);
-            writer = encoder.writable.getWriter();
-
-            document.getElementById("status").textContent = "Status: Connected!";
+            await openPort();
+            await listPorts(); // refresh list
         } catch (err) {
+            console.error(err);
             document.getElementById("status").textContent = "Error: " + err;
         }
     }
 
-
-    const MAXWIDTH = 32;
-    const MAXHEIGHT = 16;
-    let flippy = Array.from({ length: MAXHEIGHT }, () => Array(MAXWIDTH).fill(0));
-
-    function displayText(text, width, height, port, address,) {
-        flippy = Array.from({ length: height }, () => Array(width).fill(0));
-        flippy = erase(width, height);
-        const matrix = tiny(text);
-        flippy = place(flippy, matrix, [0, 4], false, width, height);
-        displayMain(flippy, port, address);
+    /** Open the selected port */
+    async function openPort() {
+        if (!port) return;
+        await port.open({ baudRate: 4800 });
+        writer = port.writable.getWriter();
+        document.getElementById("status").textContent = "Status: Connected!";
     }
 
-    window.addEventListener("load", listPorts);
-    
-    document.getElementById("connect").addEventListener("click", connect);
-    document.getElementById("send").addEventListener("click", displayText("HELLO", MAXWIDTH, MAXHEIGHT));
+    /** Handle selection from dropdown */
+    document.getElementById("portSelect").addEventListener("change", async (e) => {
+        const ports = await navigator.serial.getPorts();
+        port = ports[e.target.value];
+        if (port) await openPort();
+    });
 
-    // displayText("HELLO", MAXWIDTH, MAXHEIGHT);
+    /** Connect button triggers requestPort */
+    document.getElementById("connect").addEventListener("click", requestNewPort);
+
+    /** Display text on the FlipDot */
+    document.getElementById("send").addEventListener("click", async () => {
+        const text = document.getElementById("textInput").value;
+        const width = parseInt(document.getElementById("width").value, 10);
+        const height = parseInt(document.getElementById("height").value, 10);
+        const address = parseInt(document.getElementById("address").value, 10);
+
+        if (!port || !writer) {
+            alert("Please connect to a port first!");
+            return;
+        }
+
+        let flippy = erase(width, height);
+        const matrix = tiny(text);
+        flippy = place(flippy, matrix, [0, 4], false, width, height);
+        await displayMain(flippy, address);
+    });
+
+    window.addEventListener("load", listPorts);
 </script>
+
 </body>
 </html>
