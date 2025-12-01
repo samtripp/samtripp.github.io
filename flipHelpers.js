@@ -31,7 +31,7 @@ export function convert(matrix) {
 }
 
 function glify(text, font) {
-  const chars = text.toUpperCase().trim().split('');
+  const chars = text.toUpperCase().split('');
   let output = [];
 
   for (const c of chars) {
