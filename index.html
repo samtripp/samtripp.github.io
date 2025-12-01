@@ -35,7 +35,7 @@
 
   <script type="module">
     import { erase, place, convert, tiny } from './flipHelpers.js';
-    import { displayMain } from './display.js';
+    import { displayMain, openPort } from './display.js';
 
     let port;
     let writer;
@@ -74,15 +74,13 @@
             document.getElementById("status").textContent = "Error: " + err;
         }
     }
-
-    /** Open the selected port */
     
 
     /** Handle selection from dropdown */
     document.getElementById("portSelect").addEventListener("change", async (e) => {
         const ports = await navigator.serial.getPorts();
         port = ports[e.target.value];
-        if (port) await openPort();
+        if (port) await openPort(port);
     });
 
     /** Connect button triggers requestPort */
