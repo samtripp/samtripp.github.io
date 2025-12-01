@@ -1,28 +1,17 @@
 // display_webserial.js
-// Browser-compatible ES Module using Web Serial API
-
 const HEADER = '\x02';
 const FOOTER = '\x03';
 
-/**
- * Converts a hex character to 4-bit binary string
- */
 function chrToHexTo4bit(character) {
   const number = parseInt(character, 16);
   return number.toString(2).padStart(4, '0');
 }
 
-/**
- * Decode 2 hex characters to a number
- */
 function decode2BytesToNumber(one, two) {
   const bits = chrToHexTo4bit(one) + chrToHexTo4bit(two);
   return parseInt(bits, 2);
 }
 
-/**
- * Encode number to 2 hex characters
- */
 function encodeNumberTo2Bytes(number) {
   const binary = number.toString(2).padStart(8, '0');
   const one = parseInt(binary.slice(0, 4), 2).toString(16).toUpperCase();
@@ -30,9 +19,6 @@ function encodeNumberTo2Bytes(number) {
   return [one, two];
 }
 
-/**
- * Calculate checksum for data
- */
 function calculateChecksum(data, header, head) {
   let summed = 0;
   const tmp = [head.charCodeAt(0), ...header.map(c => c.charCodeAt(0))];
@@ -47,16 +33,12 @@ function calculateChecksum(data, header, head) {
 
   summed += dataBytes.reduce((a, b) => a + b, 0);
   summed += 1;
-
   summed &= 0xFF;
   summed ^= 255;
   summed += 1;
   return summed;
 }
 
-/**
- * Encode a matrix string (with "#" and "-") into a byte string
- */
 function encode(matrixHashDash, address = 1) {
   const matrix = matrixHashDash.trim().split('\n');
   const constant = 1;
@@ -98,36 +80,30 @@ function encode(matrixHashDash, address = 1) {
 let port;
 let writer;
 
-/**
- * Request access to a serial port
+/** 
+ * Open the selected port (called explicitly after user chooses port)
  */
-async function requestPort() {
-  port = await navigator.serial.requestPort();
+async function openPort(selectedPort) {
+  if (!selectedPort) throw new Error("No port selected");
+  port = selectedPort;
   await port.open({ baudRate: 4800 });
   writer = port.writable.getWriter();
 }
 
-/**
- * Send encoded data to the serial port
- */
+/** Write encoded string to the port */
 async function writeIt(encoded) {
-  if (!writer) throw new Error("Serial port not open. Call requestPort() first.");
+  if (!writer) throw new Error("Serial port not open. Call openPort() first.");
   const encoder = new TextEncoder();
   await writer.write(encoder.encode(encoded));
 }
 
-/**
- * Display matrix on the serial device
- * @param {Array<Array<number>>} matrix
- * @param {number} address
- */
+/** Display matrix: assumes port is already open */
 async function displayMain(matrix, address = 1) {
+  if (!port || !writer) throw new Error("Port not open. Call openPort() first.");
+
   const matrixStr = matrix.map(row => row.join('').replace(/0/g, '-').replace(/1/g, '#')).join('\n');
   const encoded = encode(matrixStr, address);
-  if (!port || !writer) {
-    await requestPort();
-  }
   await writeIt(encoded);
 }
 
-export { displayMain, requestPort, writeIt, encode };
+export { displayMain, openPort, writeIt, encode };

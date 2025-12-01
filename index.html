@@ -76,12 +76,7 @@
     }
 
     /** Open the selected port */
-    async function openPort() {
-        if (!port) return;
-        await port.open({ baudRate: 4800 });
-        writer = port.writable.getWriter();
-        document.getElementById("status").textContent = "Status: Connected!";
-    }
+    
 
     /** Handle selection from dropdown */
     document.getElementById("portSelect").addEventListener("change", async (e) => {
