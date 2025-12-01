@@ -52,7 +52,7 @@
 
     /** Send button displays text */
     document.getElementById("send").addEventListener("click", async () => {
-      if (!port || !writer) {
+      if (!port) {
         alert("Please connect to a port first!");
         return;
       }

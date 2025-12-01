@@ -77,7 +77,7 @@ async function writeIt(encoded) {
 
 // Display matrix
 async function displayMain(matrix, address = 1) {
-  if (!port || !writer) throw new Error("Port not open");
+  if (!port) throw new Error("Port not open");
   const matrixStr = matrix.map(row => row.join('').replace(/0/g,'-').replace(/1/g,'#')).join('\n');
   const encoded = encode(matrixStr, address);
   await writeIt(encoded);
