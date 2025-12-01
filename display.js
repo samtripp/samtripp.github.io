@@ -5,57 +5,54 @@ const FOOTER = '\x03';
 let port;
 let writer;
 
-/**
- * Convert single hex char to 4-bit number
- */
-function chrToHexTo4bit(char) {
-  return parseInt(char, 16);
+function chrToHexTo4bit(character) {
+  const number = parseInt(character, 16);
+  return number.toString(2).padStart(4, '0');
 }
 
-/**
- * Decode two hex characters to one byte
- */
 function decode2BytesToNumber(one, two) {
-  return (chrToHexTo4bit(one) << 4) | chrToHexTo4bit(two);
+  const bits = chrToHexTo4bit(one) + chrToHexTo4bit(two);
+  return parseInt(bits, 2);
 }
 
-/**
- * Encode number to two hex characters
- */
 function encodeNumberTo2Bytes(number) {
-  const high = (number >> 4) & 0x0f;
-  const low = number & 0x0f;
-  return [high.toString(16).toUpperCase(), low.toString(16).toUpperCase()];
+  const binary = number.toString(2).padStart(8, '0');
+  const one = parseInt(binary.slice(0, 4), 2).toString(16).toUpperCase();
+  const two = parseInt(binary.slice(4), 2).toString(16).toUpperCase();
+  return [one, two];
 }
 
-/**
- * Calculate checksum over header + data
- */
-function calculateChecksum(data, header) {
-  let sum = HEADER.charCodeAt(0);
-  for (const h of header) sum += h.charCodeAt(0);
-  for (const d of data) sum += d.charCodeAt(0);
-  sum += 1;
-  sum &= 0xff;
-  sum ^= 0xff;
-  sum += 1;
-  sum &= 0xff;
-  return sum;
+function calculateChecksum(data, header, head) {
+  let summed = 0;
+  const tmp = [head.charCodeAt(0), ...header.map(c => c.charCodeAt(0))];
+  summed += tmp.reduce((a, b) => a + b, 0);
+
+  const dataBytes = [];
+  for (const number of data) {
+    for (const val of encodeNumberTo2Bytes(number)) {
+      dataBytes.push(val.charCodeAt(0));
+    }
+  }
+
+  summed += dataBytes.reduce((a, b) => a + b, 0);
+  summed += 1;
+
+  summed &= 0xFF;
+  summed ^= 255;
+  summed += 1;
+  return summed;
 }
 
-/**
- * Encode matrix to ASCII string for FlipDot
- * matrixHashDash: string with '#' = on, '-' = off, newline-separated rows
- */
 function encode(matrixHashDash, address = 1) {
   const matrix = matrixHashDash.trim().split('\n');
+  const constant = 1;
   const rows = matrix.length;
   const columns = matrix[0].length;
 
-  const constant = 1;
   const header = [String(constant), String(address)];
+  const dataSize = (rows * columns) / 8;
+  for (const c of encodeNumberTo2Bytes(dataSize)) header.push(c);
 
-  // Data bytes as hex characters
   const data = [];
   for (let col = 0; col < columns; col++) {
     const column = matrix.map(row => row[col]).join('').replace(/[- ]/g, '0').replace(/#/g, '1');
@@ -64,20 +61,25 @@ function encode(matrixHashDash, address = 1) {
       reversed.slice(8, 12),
       reversed.slice(12, 16),
       reversed.slice(0, 4),
-      reversed.slice(4, 8)
+      reversed.slice(4, 8),
     ];
     for (const nib of nibbles) {
-      data.push(parseInt(nib, 2).toString(16).toUpperCase());
+      const num = parseInt(nib, 2);
+      data.push(num.toString(16).toUpperCase());
     }
   }
 
-  // checksum
-  const checksum = calculateChecksum(data, header);
-  const footerBytes = encodeNumberTo2Bytes(checksum);
+  const checksumData = [];
+  for (let i = 0; i < data.length; i += 2) {
+    checksumData.push(decode2BytesToNumber(data[i], data[i + 1]));
+  }
 
-  // Build final string
-  return HEADER + header.join('') + data.join('') + FOOTER + footerBytes.join('');
+  let footer = calculateChecksum(checksumData, header, HEADER);
+  footer = encodeNumberTo2Bytes(footer);
+
+  return [HEADER, ...header, ...data, FOOTER, ...footer].join('');
 }
+
 
 /**
  * Open Web Serial port
@@ -89,13 +91,13 @@ async function openPort(selectedPort) {
   writer = port.writable.getWriter();
 }
 
-/**
- * Write ASCII string to port
- */
-async function writeIt(str) {
-  if (!writer) throw new Error("Port not open");
-  const encoded = new TextEncoder().encode(str); // Uint8Array of ASCII codes
-  await writer.write(encoded);
+async function writeIt(encoded) {
+  if (!writer) throw new Error('Port not open');
+
+  const data = new Uint8Array(
+    Array.from(encoded).map(c => c.charCodeAt(0))
+  );
+  await writer.write(data);
 }
 
 /**
