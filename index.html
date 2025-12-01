@@ -56,6 +56,7 @@
                     selectedPort = await navigator.serial.requestPort({ filters: [{ usbVendorId: 0x10c4 }] });
                     await openPort(selectedPort);
                     document.getElementById("status").textContent = "Status: Connected!";
+                    document.querySelector("main").classList.add('show');
                 } catch (err) {
                     console.error(err);
                     document.getElementById("status").textContent = "Error: " + err;

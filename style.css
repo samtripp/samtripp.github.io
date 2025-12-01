@@ -21,10 +21,15 @@ body {
 }
 
 main {
-    display:flex;
+    /* display:flex; */
     padding:20px;
     width:100%;
     justify-content: space-between;
+    display:none;
+}
+
+main.show {
+    display:flex;
 }
 
 .message {
@@ -89,6 +94,8 @@ footer {
 
 h1 {
     font-size:80px;
+    margin:0px;
+    padding:0px;
 }
 
 .wrapper {
