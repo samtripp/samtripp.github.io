@@ -40,25 +40,27 @@ function encode(matrixHashDash, address = 1) {
   const rows = matrix.length;
   const columns = matrix[0].length;
 
-  const header = [String(constant), String(address)];
+  const header = [constant, address];
   const dataSize = (rows * columns) / 8;
-  for (const c of encodeNumberTo2Bytes(dataSize)) header.push(c);
+  const [dsHigh, dsLow] = encodeNumberTo2Bytes(dataSize).map(h => parseInt(h, 16));
+  header.push(dsHigh, dsLow);
 
   const data = [];
   for (let col = 0; col < columns; col++) {
     const column = matrix.map(row => row[col]).join('').replace(/[- ]/g,'0').replace(/#/g,'1');
     const reversed = column.split('').reverse().join('');
     const nibbles = [reversed.slice(8,12), reversed.slice(12,16), reversed.slice(0,4), reversed.slice(4,8)];
-    for (const nib of nibbles) data.push(parseInt(nib,2).toString(16).toUpperCase());
+    for (const nib of nibbles) data.push(parseInt(nib,2));
   }
 
   const checksumData = [];
-  for (let i=0;i<data.length;i+=2) checksumData.push(decode2BytesToNumber(data[i],data[i+1]));
-  let footer = calculateChecksum(checksumData, header, HEADER);
-  footer = encodeNumberTo2Bytes(footer);
+  for (let i=0; i<data.length; i+=2) checksumData.push(decode2BytesToNumber(data[i].toString(16).toUpperCase(), data[i+1]?.toString(16).toUpperCase() || '0'));
+  let footer = calculateChecksum(checksumData, header.map(h => String.fromCharCode(h)), HEADER);
+  const [fHigh, fLow] = encodeNumberTo2Bytes(footer).map(h => parseInt(h, 16));
 
-  return [HEADER, ...header, ...data, FOOTER, ...footer].join('');
+  return new Uint8Array([HEADER.charCodeAt(0), ...header, ...data, FOOTER.charCodeAt(0), fHigh, fLow]);
 }
+
 
 // Open selected port
 async function openPort(selectedPort) {
@@ -69,11 +71,10 @@ async function openPort(selectedPort) {
 }
 
 // Write to port
-async function writeIt(encoded) {
+async function writeIt(bytes) {
   if (!writer) throw new Error("Port not open");
-  const encoder = new TextEncoder();
-  console.log(encoder.encode(encoded))
-  await writer.write(encoder.encode(encoded));
+  console.log(bytes)
+  await writer.write(bytes);
 }
 
 // Display matrix
