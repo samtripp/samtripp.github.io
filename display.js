@@ -25,39 +25,38 @@ function calculateChecksum(data, header) {
 
 function encode(matrixHashDash, address = 1) {
   const matrix = matrixHashDash.trim().split('\n');
-  const rows = matrix.length;
-  const cols = matrix[0].length;
-
   const constant = 1;
-  const header = [constant, address];
-  const dataSize = (rows * cols) / 8;
-  header.push(...encodeNumberTo2Bytes(dataSize));
+  const rows = matrix.length;
+  const columns = matrix[0].length;
+
+  const header = [String(constant), String(address)];
+  const dataSize = (rows * columns) / 8;
+  for (const c of encodeNumberTo2Bytes(dataSize)) header.push(c);
 
   const data = [];
-
-  for (let col = 0; col < cols; col++) {
-    const column = matrix.map(row => row[col]).join('').replace(/[- ]/g,'0').replace(/#/g,'1');
+  for (let col = 0; col < columns; col++) {
+    const column = matrix.map(row => row[col]).join('').replace(/[- ]/g, '0').replace(/#/g, '1');
     const reversed = column.split('').reverse().join('');
     const nibbles = [
-      reversed.slice(8,12),
-      reversed.slice(12,16),
-      reversed.slice(0,4),
-      reversed.slice(4,8)
+      reversed.slice(8, 12),
+      reversed.slice(12, 16),
+      reversed.slice(0, 4),
+      reversed.slice(4, 8),
     ];
     for (const nib of nibbles) {
-      data.push(parseInt(nib,2));
+      const num = parseInt(nib, 2);
+      data.push(num.toString(16).toUpperCase());
     }
   }
 
   const checksumData = [];
   for (let i = 0; i < data.length; i += 2) {
-    checksumData.push((data[i] << 4) | data[i + 1]);
+    checksumData.push(decode2BytesToNumber(data[i], data[i + 1]));
   }
 
-  const footer = calculateChecksum(checksumData, header);
-//   const final = [HEADER, ...header, ...data, FOOTER, footer];
+  let footer = calculateChecksum(checksumData, header, HEADER);
+  footer = encodeNumberTo2Bytes(footer);
   return HEADER + header.join('') + data.join('') + FOOTER + footer.join('');
-//   return final; // Array of numbers 0-15 for nibbles
 }
 
 async function openPort(selectedPort) {
