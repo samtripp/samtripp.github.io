@@ -115,7 +115,7 @@
 
             document.getElementById("connect").addEventListener("click", async () => {
                 try {
-                    selectedPort = await navigator.serial.requestPort({ filters: [{ usbVendorId: 0x10c4 }] });
+                    selectedPort = await navigator.serial.requestPort();
                     await openPort(selectedPort);
                     document.getElementById("status").textContent = "Status: Connected!";
                     document.querySelector(".form").classList.add('show');
